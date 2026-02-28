@@ -1,8 +1,270 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import { useAudioEngine, BPM_MIN, BPM_MAX } from './hooks/useAudioEngine';
 import { PATTERNS, KEYS, getDisplayChords, getSampleSlots, getDegreeNumbers } from './progressions';
 import { STYLES, STYLE_PRESETS, type StyleName, type GrooveSpec } from './grooveSpec';
+
+// ----------------------------------------------------------------
+// 多言語サポート
+// ----------------------------------------------------------------
+export type LangCode = 'en' | 'ja' | 'zh-Hans' | 'zh-Hant' | 'ko';
+
+export const LANG_OPTIONS: { code: LangCode; label: string }[] = [
+  { code: 'en',      label: 'EN' },
+  { code: 'ja',      label: '日本語' },
+  { code: 'zh-Hans', label: '简体中文' },
+  { code: 'zh-Hant', label: '繁體中文' },
+  { code: 'ko',      label: '한국어' },
+];
+
+interface HelpItem   { heading: string; body: string }
+interface HelpSection { title: string; items: HelpItem[] }
+type HelpContent = Record<string, Record<LangCode, HelpSection>>;
+
+const HELP_CONTENT: HelpContent = {
+  bpm: {
+    en: {
+      title: 'How to Use BPM',
+      items: [
+        { heading: '− / + buttons', body: 'Decrease or increase the BPM by 1 per tap.' },
+        { heading: 'Slider', body: 'Drag left or right to set the BPM. Range: 60–200 BPM.' },
+      ],
+    },
+    ja: {
+      title: 'BPM の使い方',
+      items: [
+        { heading: '−/+ ボタン', body: 'タップするたびに BPM を 1 下げ/上げします。' },
+        { heading: 'スライダー', body: '左右にドラッグして BPM を設定します。範囲：60〜200 BPM。' },
+      ],
+    },
+    'zh-Hans': {
+      title: 'BPM 使用方法',
+      items: [
+        { heading: '−/+ 按钮', body: '每次点击将 BPM 减少或增加 1。' },
+        { heading: '滑块', body: '向左/右拖动设置 BPM。范围：60〜200 BPM。' },
+      ],
+    },
+    'zh-Hant': {
+      title: 'BPM 使用方法',
+      items: [
+        { heading: '−/+ 按鈕', body: '每次點擊將 BPM 減少或增加 1。' },
+        { heading: '滑桿', body: '向左/右拖動設定 BPM。範圍：60〜200 BPM。' },
+      ],
+    },
+    ko: {
+      title: 'BPM 사용법',
+      items: [
+        { heading: '−/+ 버튼', body: '탭할 때마다 BPM을 1씩 줄이거나 늘립니다.' },
+        { heading: '슬라이더', body: '좌우로 드래그하여 BPM을 설정합니다. 범위: 60〜200 BPM.' },
+      ],
+    },
+  },
+  progression: {
+    en: {
+      title: 'How to Use Progression',
+      items: [
+        { heading: 'Key', body: 'Select the tonal center. All chord and bass samples change to match the selected key.' },
+        { heading: 'Preset Progression', body: 'Choose a chord pattern (e.g., Am–G–F–G). The pattern loops every 4 bars.' },
+        { heading: 'Loop Changes (bar chips)', body: 'Tap any of the 8 bar chips to open a wheel picker and customize the guitar/bass chord for that bar. The current bar is highlighted in orange during playback.' },
+        { heading: 'Reset', body: 'Appears when any bar has been customized. Tap to restore all bars to the preset pattern.' },
+      ],
+    },
+    ja: {
+      title: 'PROGRESSION の使い方',
+      items: [
+        { heading: 'Key', body: '調のルートを選択します。ギター・ベースのサンプルがすべて対応キーに変わります。' },
+        { heading: 'Preset Progression', body: 'コード進行のプリセットを選択します（例：Am–G–F–G）。4小節ループで繰り返されます。' },
+        { heading: 'Loop Changes（コードチップ）', body: '8つの小節チップをタップするとホイールピッカーが開き、その小節のギター/ベースコードを変更できます。再生中は現在の小節がオレンジでハイライトされます。' },
+        { heading: 'Reset', body: 'カスタムが適用された小節があると表示されます。タップでプリセットに戻します。' },
+      ],
+    },
+    'zh-Hans': {
+      title: 'PROGRESSION 使用方法',
+      items: [
+        { heading: 'Key（调）', body: '选择音调中心。所有和弦及贝斯采样将随之变更。' },
+        { heading: 'Preset Progression（预设进行）', body: '选择和弦进行预设（例：Am–G–F–G）。每4小节循环。' },
+        { heading: 'Loop Changes（小节芯片）', body: '点击8个小节芯片中的任意一个，打开滚轮选择器，自定义该小节的吉他/贝斯和弦。播放时当前小节以橙色高亮显示。' },
+        { heading: 'Reset', body: '有自定义小节时显示。点击可恢复为预设。' },
+      ],
+    },
+    'zh-Hant': {
+      title: 'PROGRESSION 使用方法',
+      items: [
+        { heading: 'Key（調）', body: '選擇音調中心。所有和弦及低音採樣將隨之更改。' },
+        { heading: 'Preset Progression（預設進行）', body: '選擇和弦進行預設（例：Am–G–F–G）。每4小節循環。' },
+        { heading: 'Loop Changes（小節芯片）', body: '點擊8個小節芯片中的任一個，開啟滾輪選擇器，自訂該小節的吉他/低音和弦。播放時當前小節以橙色高亮顯示。' },
+        { heading: 'Reset', body: '有自訂小節時顯示。點擊可恢復為預設。' },
+      ],
+    },
+    ko: {
+      title: 'PROGRESSION 사용법',
+      items: [
+        { heading: 'Key', body: '음조 중심을 선택합니다. 모든 코드 및 베이스 샘플이 선택한 키로 변경됩니다.' },
+        { heading: 'Preset Progression', body: '코드 진행 프리셋을 선택합니다 (예: Am–G–F–G). 4마디마다 반복됩니다.' },
+        { heading: 'Loop Changes（마디 칩）', body: '8개의 마디 칩 중 하나를 탭하면 휠 선택기가 열려 해당 마디의 기타/베이스 코드를 변경할 수 있습니다. 재생 중에는 현재 마디가 주황색으로 표시됩니다.' },
+        { heading: 'Reset', body: '커스텀 마디가 있을 때 표시됩니다. 탭하면 프리셋으로 초기화됩니다.' },
+      ],
+    },
+  },
+  humanize: {
+    en: {
+      title: 'How to Use Humanize',
+      items: [
+        { heading: 'Tap to toggle', body: 'Switch Humanize ON or OFF. When ON, note timing is randomly shifted for a more natural, human feel.' },
+        { heading: '±N ms display', body: 'Shown when ON. Indicates the maximum random timing offset applied to each note. The amount depends on the current Style preset.' },
+      ],
+    },
+    ja: {
+      title: 'Humanize の使い方',
+      items: [
+        { heading: 'タップでオン/オフ', body: 'Humanize を ON / OFF で切り替えます。ON にすると音符のタイミングがランダムにずれ、より自然な演奏感になります。' },
+        { heading: '±N ms 表示', body: 'ON のときに表示されます。各音符に適用される最大のランダムタイミングずれ量です。数値は現在のスタイルプリセットによって異なります。' },
+      ],
+    },
+    'zh-Hans': {
+      title: 'Humanize 使用方法',
+      items: [
+        { heading: '点击切换', body: '开启或关闭 Humanize。开启时，音符时间将随机偏移，使演奏更具人性化。' },
+        { heading: '±N ms 显示', body: '开启时显示。表示每个音符所应用的最大随机时间偏移量。具体数值取决于当前的 Style 预设。' },
+      ],
+    },
+    'zh-Hant': {
+      title: 'Humanize 使用方法',
+      items: [
+        { heading: '點擊切換', body: '開啟或關閉 Humanize。開啟時，音符時間將隨機偏移，使演奏更具人性化。' },
+        { heading: '±N ms 顯示', body: '開啟時顯示。表示每個音符所應用的最大隨機時間偏移量。具體數值取決於當前的 Style 預設。' },
+      ],
+    },
+    ko: {
+      title: 'Humanize 사용법',
+      items: [
+        { heading: '탭하여 전환', body: 'Humanize를 ON / OFF로 전환합니다. ON 상태에서는 음표 타이밍이 무작위로 이동하여 더 자연스러운 연주감을 만듭니다.' },
+        { heading: '±N ms 표시', body: 'ON일 때 표시됩니다. 각 음표에 적용되는 최대 무작위 타이밍 오프셋입니다. 정확한 값은 현재 Style 프리셋에 따라 다릅니다.' },
+      ],
+    },
+  },
+  style: {
+    en: {
+      title: 'How to Use Style',
+      items: [
+        { heading: 'Style buttons (Tight / Rock / Funk / Jazz / Ballad / Latin)', body: 'Tap to select a groove style. Each style sets kick density, hat density, guitar skip probability, and humanize amount together.' },
+        { heading: 'Sequencer opacity', body: 'Step cells in the Sequencer reflect each track\'s density. Dimmer cells mean a lower probability of sounding on that step.' },
+      ],
+    },
+    ja: {
+      title: 'Style の使い方',
+      items: [
+        { heading: 'スタイルボタン（Tight / Rock / Funk / Jazz / Ballad / Latin）', body: 'タップしてグルーブスタイルを選択します。キック密度・ハット密度・ギタースキップ確率・ヒューマナイズ量がまとめて切り替わります。' },
+        { heading: 'シーケンサーの透明度', body: 'シーケンサーのセルが各トラックの密度を反映します。薄いセルほどそのステップで発音される確率が低くなります。' },
+      ],
+    },
+    'zh-Hans': {
+      title: 'Style 使用方法',
+      items: [
+        { heading: '风格按钮（Tight / Rock / Funk / Jazz / Ballad / Latin）', body: '点击选择律动风格。每种风格会一并设置底鼓密度、踩镲密度、吉他跳过概率和时间偏移量。' },
+        { heading: '音序器透明度', body: '音序器中的步骤格子反映各音轨的密度。格子越淡，该步骤发声的概率越低。' },
+      ],
+    },
+    'zh-Hant': {
+      title: 'Style 使用方法',
+      items: [
+        { heading: '風格按鈕（Tight / Rock / Funk / Jazz / Ballad / Latin）', body: '點擊選擇律動風格。每種風格會一併設定大鼓密度、踩鈸密度、吉他跳過概率和時間偏移量。' },
+        { heading: '音序器透明度', body: '音序器中的步驟格子反映各音軌的密度。格子越淡，該步驟發聲的概率越低。' },
+      ],
+    },
+    ko: {
+      title: 'Style 사용법',
+      items: [
+        { heading: '스타일 버튼 (Tight / Rock / Funk / Jazz / Ballad / Latin)', body: '탭하여 그루브 스타일을 선택합니다. 각 스타일은 킥 밀도, 하이햇 밀도, 기타 스킵 확률, 휴머나이즈 양을 함께 설정합니다.' },
+        { heading: '시퀀서 투명도', body: '시퀀서의 스텝 셀은 각 트랙의 밀도를 반영합니다. 셀이 흐릴수록 해당 스텝에서 소리날 확률이 낮습니다.' },
+      ],
+    },
+  },
+  sequencer: {
+    en: {
+      title: 'How to Use the Sequencer',
+      items: [
+        { heading: 'Tap a track name', body: 'Toggle mute / unmute. Orange = active, gray = muted.' },
+        { heading: 'Tap a track row', body: 'Expand to enter edit mode. Tap again to collapse.' },
+        { heading: 'Bar selector (1–8)', body: 'Select the bar to edit. During playback, the current bar is highlighted in orange.' },
+        { heading: 'Step buttons (1–16)', body: 'Tap to toggle ON / OFF. Sound plays on ON steps.' },
+        { heading: 'CR_GTR beat buttons (1–4)', body: 'Tap to toggle active (orange) / inactive (gray). Long press (0.4 s) to change the chord.' },
+        { heading: 'VOL slider', body: 'Adjust each track\'s volume from 0 to 100.' },
+      ],
+    },
+    ja: {
+      title: 'Sequencer の使い方',
+      items: [
+        { heading: 'トラック名をタップ', body: 'ミュート／解除を切り替えます。オレンジ = 有効、グレー = ミュート。' },
+        { heading: 'トラック行をタップ', body: '展開して詳細編集モードを開きます。もう一度タップで閉じます。' },
+        { heading: '小節セレクター（1〜8）', body: '編集したい小節を選択します。再生中は現在の小節がオレンジ枠でハイライトされます。' },
+        { heading: 'ステップボタン（1〜16）', body: 'タップで ON / OFF を切り替えます。ON のステップで音が鳴ります。' },
+        { heading: 'CR_GTR ビートボタン（1〜4）', body: 'タップで活性（オレンジ）/ 非活性（グレー）を切り替えます。ロングプレス（0.4秒）でコードを変更できます。' },
+        { heading: 'VOL スライダー', body: 'トラックごとの音量を 0〜100 で調整します。' },
+      ],
+    },
+    'zh-Hans': {
+      title: '音序器使用方法',
+      items: [
+        { heading: '点击音轨名称', body: '切换静音／取消静音。橙色 = 启用，灰色 = 静音。' },
+        { heading: '点击音轨行', body: '展开进入详细编辑模式。再次点击可关闭。' },
+        { heading: '小节选择器（1〜8）', body: '选择要编辑的小节。播放时当前小节以橙色框高亮显示。' },
+        { heading: '步骤按钮（1〜16）', body: '点击切换 ON／OFF。ON 状态的步骤会发声。' },
+        { heading: 'CR_GTR 拍点按钮（1〜4）', body: '点击切换启用（橙色）／停用（灰色）。长按（0.4秒）可更改和弦。' },
+        { heading: 'VOL 滑块', body: '调整各音轨音量（0〜100）。' },
+      ],
+    },
+    'zh-Hant': {
+      title: '音序器使用方法',
+      items: [
+        { heading: '點擊音軌名稱', body: '切換靜音／取消靜音。橙色 = 啟用，灰色 = 靜音。' },
+        { heading: '點擊音軌行', body: '展開進入詳細編輯模式。再次點擊可關閉。' },
+        { heading: '小節選擇器（1〜8）', body: '選擇要編輯的小節。播放時當前小節以橙色框高亮顯示。' },
+        { heading: '步驟按鈕（1〜16）', body: '點擊切換 ON／OFF。ON 狀態的步驟會發聲。' },
+        { heading: 'CR_GTR 拍點按鈕（1〜4）', body: '點擊切換啟用（橙色）／停用（灰色）。長按（0.4秒）可更改和弦。' },
+        { heading: 'VOL 滑桿', body: '調整各音軌音量（0〜100）。' },
+      ],
+    },
+    ko: {
+      title: '시퀀서 사용법',
+      items: [
+        { heading: '트랙 이름 탭', body: '음소거 / 해제를 전환합니다. 주황색 = 활성, 회색 = 음소거.' },
+        { heading: '트랙 행 탭', body: '확장하여 상세 편집 모드로 진입합니다. 다시 탭하면 닫힙니다.' },
+        { heading: '마디 선택기（1〜8）', body: '편집할 마디를 선택합니다. 재생 중에는 현재 마디가 주황색 테두리로 표시됩니다.' },
+        { heading: '스텝 버튼（1〜16）', body: '탭하여 ON / OFF를 전환합니다. ON 상태의 스텝에서 소리가 납니다.' },
+        { heading: 'CR_GTR 비트 버튼（1〜4）', body: '탭하여 활성(주황색) / 비활성(회색)을 전환합니다. 길게 누르면(0.4초) 코드를 변경할 수 있습니다.' },
+        { heading: 'VOL 슬라이더', body: '각 트랙의 음량을 0〜100으로 조절합니다.' },
+      ],
+    },
+  },
+};
+
+// ----------------------------------------------------------------
+// HelpModal コンポーネント
+// ----------------------------------------------------------------
+function HelpModal({ sectionKey, lang, onClose }: { sectionKey: string; lang: LangCode; onClose: () => void }) {
+  const content = HELP_CONTENT[sectionKey]?.[lang];
+  if (!content) return null;
+  return (
+    <>
+      <div className="help-backdrop" onClick={onClose} />
+      <div className="help-modal">
+        <div className="help-modal__header">
+          <span className="help-modal__title">{content.title}</span>
+          <button className="help-modal__close" onClick={onClose}>✕</button>
+        </div>
+        <div className="help-modal__body">
+          {content.items.map((item, i) => (
+            <div key={i} className="help-modal__item">
+              <p className="help-modal__heading">{item.heading}</p>
+              <p className="help-modal__text">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
 
 // ギターサンプル選択肢（13種）
 const GUITAR_OPTIONS = [
@@ -325,6 +587,10 @@ export default function App() {
     setTrackVolume(TRACK_TO_AUDIO[trackName], value);
   };
 
+  const [lang, setLang] = useState<LangCode>('en');
+  const [openHelp, setOpenHelp] = useState<string | null>(null);
+  const closeHelp = useCallback(() => setOpenHelp(null), []);
+
   const [styleName, setStyleName] = useState<StyleName>(INITIAL_STYLE);
   const grooveSpec = STYLE_PRESETS[styleName];
 
@@ -380,6 +646,17 @@ export default function App() {
   return (
     <div className="app">
       <div className="card">
+        <div className="lang-select-wrapper">
+          <select
+            className="lang-select"
+            value={lang}
+            onChange={(e) => setLang(e.target.value as LangCode)}
+          >
+            {LANG_OPTIONS.map((o) => (
+              <option key={o.code} value={o.code}>{o.label}</option>
+            ))}
+          </select>
+        </div>
         <h1 className="card__title">OK</h1>
         <p className="card__subtitle">BackTruckMaker</p>
 
@@ -434,7 +711,11 @@ export default function App() {
 
             {/* BPM コントロール */}
             <div className="bpm-section">
-              <p className="progression-section-title">BPM</p>
+              <div className="section-title-row">
+                <p className="progression-section-title">BPM</p>
+                <button className="btn-help" onClick={() => setOpenHelp('bpm')}>?</button>
+              </div>
+              {openHelp === 'bpm' && <HelpModal sectionKey="bpm" lang={lang} onClose={closeHelp} />}
               <div className="bpm-control">
                 <button className="btn-bpm" onClick={() => setBpm(bpm - 1)}>−</button>
                 <div className="bpm-display">
@@ -458,8 +739,11 @@ export default function App() {
 
             {/* PROGRESSION セクション */}
             <div className="progression-section">
-
-              <p className="progression-section-title">PROGRESSION</p>
+              <div className="section-title-row">
+                <p className="progression-section-title">PROGRESSION</p>
+                <button className="btn-help" onClick={() => setOpenHelp('progression')}>?</button>
+              </div>
+              {openHelp === 'progression' && <HelpModal sectionKey="progression" lang={lang} onClose={closeHelp} />}
 
               {/* Key プルダウン */}
               <div className="prog-item">
@@ -611,7 +895,11 @@ export default function App() {
 
             {/* パターン表示（密度を opacity で可視化） */}
             <div className="sequencer-section">
-              <p className="progression-section-title">Sequencer</p>
+              <div className="section-title-row">
+                <p className="progression-section-title">Sequencer</p>
+                <button className="btn-help" onClick={() => setOpenHelp('sequencer')}>?</button>
+              </div>
+              {openHelp === 'sequencer' && <HelpModal sectionKey="sequencer" lang={lang} onClose={closeHelp} />}
             <div className="pattern-grid">
               {Object.entries(VISUAL).map(([name]) => {
                 const isExpanded = expandedTrack === name;
@@ -783,22 +1071,33 @@ export default function App() {
             </div>
             </div>
 
-            {/* Humanize トグル */}
-            <button
-              className={`btn-humanize ${humanize ? 'btn-humanize--on' : ''}`}
-              onClick={toggleHumanize}
-            >
-              <span className="humanize-dot" />
-              Humanize
-              <span className="humanize-badge">{humanize ? 'ON' : 'OFF'}</span>
-              {humanize && grooveSpec.humanizeMs > 0 && (
-                <span className="humanize-ms">±{grooveSpec.humanizeMs}ms</span>
-              )}
-            </button>
+            {/* Humanize セクション */}
+            <div className="humanize-section">
+              <div className="section-title-row">
+                <p className="progression-section-title">Humanize</p>
+                <button className="btn-help" onClick={() => setOpenHelp('humanize')}>?</button>
+              </div>
+              {openHelp === 'humanize' && <HelpModal sectionKey="humanize" lang={lang} onClose={closeHelp} />}
+              <button
+                className={`btn-humanize ${humanize ? 'btn-humanize--on' : ''}`}
+                onClick={toggleHumanize}
+              >
+                <span className="humanize-dot" />
+                Humanize
+                <span className="humanize-badge">{humanize ? 'ON' : 'OFF'}</span>
+                {humanize && grooveSpec.humanizeMs > 0 && (
+                  <span className="humanize-ms">±{grooveSpec.humanizeMs}ms</span>
+                )}
+              </button>
+            </div>
 
             {/* STYLE セクション */}
             <div className="style-section">
-              <p className="progression-section-title">Style</p>
+              <div className="section-title-row">
+                <p className="progression-section-title">Style</p>
+                <button className="btn-help" onClick={() => setOpenHelp('style')}>?</button>
+              </div>
+              {openHelp === 'style' && <HelpModal sectionKey="style" lang={lang} onClose={closeHelp} />}
               <div className="style-buttons">
                 {STYLES.map((s) => (
                   <button
