@@ -1,0 +1,1291 @@
+/* ================================================================
+   BackTruck — iOS/iPad Safari 最適化スタイル
+   ================================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* iOS: タップ時のハイライトを消す */
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: #0d0d0f;
+  color: #e4e4e8;
+  /* iOS 最適フォント */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+    'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* 縦スクロールを許可（コンテンツ増加に対応） */
+  overflow-y: auto;
+  touch-action: manipulation;
+}
+
+/* ----------------------------------------------------------------
+   レイアウト
+   ---------------------------------------------------------------- */
+.app {
+  /* svh = small viewport height: iOS のアドレスバー考慮 */
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* iPhone X+ のセーフエリア対応 */
+  padding: max(20px, env(safe-area-inset-top))
+           max(20px, env(safe-area-inset-right))
+           max(20px, env(safe-area-inset-bottom))
+           max(20px, env(safe-area-inset-left));
+}
+
+.card {
+  background: #18181c;
+  border: 1px solid #2c2c34;
+  border-radius: 28px;
+  padding: 36px 28px 28px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* ----------------------------------------------------------------
+   ヘッダー
+   ---------------------------------------------------------------- */
+.card__title {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #ff6b35;
+  text-align: center;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.card__subtitle {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: #888;
+  margin-bottom: 28px;
+}
+
+.card__sub {
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #55555f;
+  margin-top: 6px;
+  margin-bottom: 36px;
+}
+
+/* ----------------------------------------------------------------
+   "Tap to enable audio" ボタン
+   ---------------------------------------------------------------- */
+.btn-enable {
+  display: block;
+  width: 100%;
+  min-height: 76px;
+  padding: 20px 24px;
+  background: #ff6b35;
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  /* iOS: appearance リセット */
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: 0 0 36px rgba(255, 107, 53, 0.35);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-enable:active {
+  transform: scale(0.96);
+  box-shadow: 0 0 16px rgba(255, 107, 53, 0.2);
+}
+
+/* ----------------------------------------------------------------
+   ローディング
+   ---------------------------------------------------------------- */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 0 12px;
+}
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid #2c2c34;
+  border-top-color: #ff6b35;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading__text {
+  color: #666;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ----------------------------------------------------------------
+   パターン グリッド
+   ---------------------------------------------------------------- */
+.sequencer-section {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #2c2c34;
+  border-radius: 16px;
+  background: #141418;
+}
+
+.pattern-grid {
+  overflow: hidden;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #22222a;
+}
+
+.track-row:last-child {
+  border-bottom: none;
+}
+
+.track-label {
+  width: 54px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #55555f;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.track-label--active {
+  color: #ff6b35;
+}
+
+.track-row--clickable {
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.track-row--clickable:active {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.step-cells {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+
+.step-cells--editable {
+  cursor: pointer;
+}
+
+/* ----------------------------------------------------------------
+   バーセレクタ（ステップエディタの小節選択）
+   ---------------------------------------------------------------- */
+.bar-selector {
+  display: flex;
+  gap: 4px;
+  padding: 6px 14px 4px;
+  border-bottom: 1px solid #22222a;
+}
+
+.bar-btn {
+  flex: 1;
+  height: 28px;
+  border-radius: 5px;
+  background: #2a2a32;
+  color: #666;
+  border: 1px solid #3a3a44;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bar-btn--active {
+  background: #3a3aff;
+  border-color: #3a3aff;
+  color: #fff;
+}
+
+.bar-btn--playing {
+  outline: 2px solid #ff6b35;
+  outline-offset: 1px;
+}
+
+/* ----------------------------------------------------------------
+   ビートコードロー（CR_GTR 展開時）
+   ---------------------------------------------------------------- */
+.beat-chord-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px 14px 0;
+}
+
+.beat-chip-wrap {
+  position: relative;
+}
+
+.beat-chord-chip {
+  width: 100%;
+  height: 28px;
+  border-radius: 5px;
+  background: #2a2a32;
+  color: #666;
+  border: 1px solid #3a3a44;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.beat-chord-chip--on {
+  background: #ff6b35;
+  border-color: #ff6b35;
+  color: #fff;
+  box-shadow: 0 0 6px rgba(255, 107, 53, 0.4);
+}
+
+.beat-chord-chip:active {
+  transform: scale(0.93);
+}
+
+/* ----------------------------------------------------------------
+   ギター単列ホイールピッカー（ビート別コード選択）
+   ---------------------------------------------------------------- */
+.guitar-wheel {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 100;
+  width: 110px;
+  background: #1a1a20;
+  border: 1px solid #3a3a44;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.75);
+}
+
+.guitar-wheel--left  { left: 0; }
+.guitar-wheel--right { right: 0; }
+
+.guitar-wheel__col {
+  position: relative;
+  overflow: hidden;
+  height: 132px; /* 3 × 44px */
+}
+
+/* ----------------------------------------------------------------
+   ステップエディタ（展開時）
+   ---------------------------------------------------------------- */
+.step-editor {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  padding: 8px 14px 12px;
+  background: #0f0f13;
+  border-bottom: 1px solid #22222a;
+}
+
+.step-btn {
+  height: 44px;
+  border-radius: 6px;
+  border: 1px solid #3a3a44;
+  background: #26262e;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #55555f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.step-btn--on {
+  background: #ff6b35;
+  border-color: #ff6b35;
+  box-shadow: 0 0 6px rgba(255, 107, 53, 0.4);
+  color: #fff;
+}
+
+.step-btn--playing {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: -2px;
+}
+
+.step-btn--on.step-btn--playing {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: -2px;
+  box-shadow: 0 0 6px rgba(255, 107, 53, 0.4), 0 0 12px rgba(255, 107, 53, 0.3);
+}
+
+.step-btn:active {
+  transform: scale(0.82);
+}
+
+/* ----------------------------------------------------------------
+   トラックボリュームスライダー
+   ---------------------------------------------------------------- */
+.track-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 12px;
+  background: #0f0f13;
+  border-bottom: 1px solid #22222a;
+}
+
+.track-volume-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #55555f;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.track-volume-value {
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #ff6b35;
+  min-width: 2.4em;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.track-volume-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    #ff6b35 calc(var(--vol-pct, 100) * 1%),
+    #2c2c34 calc(var(--vol-pct, 100) * 1%)
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.track-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.25);
+  cursor: pointer;
+  transition: box-shadow 0.1s ease;
+}
+
+.track-volume-slider:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 6px rgba(255, 107, 53, 0.3);
+}
+
+.cell {
+  flex: 1;
+  height: 10px;
+  border-radius: 3px;
+  background: #26262e;
+}
+
+/* 拍の区切りで少し隙間を空ける */
+.cell:nth-child(4n + 1) {
+  margin-left: 4px;
+}
+.cell:nth-child(1) {
+  margin-left: 0;
+}
+
+.cell--active {
+  background: #ff6b35;
+}
+
+.cell--dim {
+  /* hat の弱拍（偶数ステップ） */
+  background: #7a3520;
+}
+
+.cell--playing {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: -1px;
+}
+
+/* ----------------------------------------------------------------
+   Wake Lock 状態バッジ（診断用）
+   ---------------------------------------------------------------- */
+.wakelock-badge {
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.wakelock-badge--on {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.wakelock-badge--off {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* ----------------------------------------------------------------
+   BPM コントロール
+   ---------------------------------------------------------------- */
+.bpm-section {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #2c2c34;
+  border-radius: 16px;
+  background: #141418;
+}
+
+.bpm-control {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 16px 10px;
+}
+
+.btn-bpm {
+  grid-row: 1;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #3a3a44;
+  border-radius: 10px;
+  background: #26262e;
+  color: #e4e4e8;
+  font-size: 1.3rem;
+  font-weight: 300;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+}
+
+.btn-bpm:active {
+  transform: scale(0.88);
+  background: #ff6b35;
+  color: #fff;
+  border-color: #ff6b35;
+}
+
+.bpm-display {
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  gap: 2px;
+}
+
+.bpm-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #ff6b35;
+  font-variant-numeric: tabular-nums;
+}
+
+.bpm-unit {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #55555f;
+  text-transform: uppercase;
+}
+
+/* スライダー（全列に広がる） */
+.bpm-slider {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    #ff6b35 calc((var(--bpm-pct, 42.86)) * 1%),
+    #2c2c34 calc((var(--bpm-pct, 42.86)) * 1%)
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+/* スライダーのつまみ (WebKit) */
+.bpm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.25);
+  cursor: pointer;
+  transition: box-shadow 0.1s ease;
+}
+
+.bpm-slider:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 6px rgba(255, 107, 53, 0.3);
+}
+
+/* ----------------------------------------------------------------
+   Play / Stop ボタン
+   ---------------------------------------------------------------- */
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn-play,
+.btn-stop {
+  flex: 1;
+  min-height: 68px;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.btn-play {
+  background: #ff6b35;
+  color: #fff;
+  box-shadow: 0 0 24px rgba(255, 107, 53, 0.3);
+}
+
+.btn-stop {
+  background: #26262e;
+  color: #b0b0bc;
+  border: 1px solid #3a3a44;
+}
+
+.btn-play:active,
+.btn-stop:active {
+  transform: scale(0.95);
+}
+
+.btn-play:disabled,
+.btn-stop:disabled {
+  opacity: 0.3;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+
+/* ----------------------------------------------------------------
+   Humanize トグル
+   ---------------------------------------------------------------- */
+.btn-humanize {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 16px;
+  border: 1px solid #3a3a44;
+  border-radius: 12px;
+  background: #26262e;
+  color: #66666f;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-humanize--on {
+  background: rgba(255, 107, 53, 0.12);
+  border-color: #ff6b35;
+  color: #ff6b35;
+}
+
+.btn-humanize:active {
+  transform: scale(0.97);
+}
+
+.humanize-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3a3a44;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.btn-humanize--on .humanize-dot {
+  background: #ff6b35;
+  box-shadow: 0 0 6px rgba(255, 107, 53, 0.7);
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+.humanize-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #3a3a44;
+  color: #55555f;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-humanize--on .humanize-badge {
+  background: #ff6b35;
+  color: #fff;
+}
+
+.humanize-ms {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 107, 53, 0.7);
+  margin-left: -4px;
+}
+
+/* ----------------------------------------------------------------
+   ステータスバー
+   ---------------------------------------------------------------- */
+.status {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.status--playing {
+  color: #4ade80;
+}
+
+.status--playing::before {
+  content: '● ';
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.status--stopped {
+  color: #44444c;
+}
+
+.status--stopped::before {
+  content: '○ ';
+}
+
+/* ----------------------------------------------------------------
+   Style セクション
+   ---------------------------------------------------------------- */
+.style-section {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid #2c2c34;
+  border-radius: 16px;
+  background: #141418;
+}
+
+.style-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-style {
+  padding: 4px 12px;
+  border: 1px solid #3a3a44;
+  border-radius: 8px;
+  background: #26262e;
+  color: #66666f;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-style--active {
+  background: rgba(123, 143, 255, 0.15);
+  border-color: #7b8fff;
+  color: #7b8fff;
+}
+
+.btn-style:active {
+  transform: scale(0.92);
+}
+
+
+/* ----------------------------------------------------------------
+   Key プルダウン（Progression セクション内）
+   ---------------------------------------------------------------- */
+.prog-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.prog-item-label {
+  display: block;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #55555f;
+}
+
+.prog-divider {
+  border: none;
+  border-top: 1px solid #2c2c34;
+  margin: 12px 0;
+}
+
+.key-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.key-current {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #26262e;
+  border: 1px solid #3a3a44;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s ease;
+}
+
+.key-current:active {
+  border-color: #7b8fff;
+}
+
+.key-current-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #e4e4e8;
+  flex: 1;
+  text-align: center;
+}
+
+.key-current-arrow {
+  color: #55555f;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.key-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.key-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 100;
+  background: #1e1e24;
+  border: 1px solid #3a3a44;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  min-width: 80px;
+}
+
+.key-option {
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #2a2a32;
+  color: #66666f;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.key-option:last-child {
+  border-bottom: none;
+}
+
+.key-option--active {
+  background: rgba(123, 143, 255, 0.12);
+  color: #7b8fff;
+}
+
+.key-option:active:not(.key-option--unavailable) {
+  background: rgba(123, 143, 255, 0.2);
+}
+
+.key-option--unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.key-option-note {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: #44444c;
+}
+
+/* ----------------------------------------------------------------
+   Progression セクション
+   ---------------------------------------------------------------- */
+.progression-section {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #2c2c34;
+  border-radius: 16px;
+  background: #141418;
+}
+
+.progression-section-title {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #888;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #55555f;
+  flex-shrink: 0;
+}
+
+/* カスタムドロップダウン wrapper */
+.progression-select-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.progression-current {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #26262e;
+  border: 1px solid #3a3a44;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s ease;
+}
+
+.progression-current:active {
+  border-color: #ff6b35;
+}
+
+.prog-current-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #e4e4e8;
+}
+
+.prog-current-arrow {
+  color: #55555f;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* 背景タップで閉じる透明レイヤー */
+.progression-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* オプション一覧パネル */
+.progression-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #1e1e24;
+  border: 1px solid #3a3a44;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.progression-option {
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #2a2a32;
+  color: #66666f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  text-align: left;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.progression-option:last-child {
+  border-bottom: none;
+}
+
+.progression-option-degrees {
+  margin-left: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.5;
+  letter-spacing: 0.04em;
+}
+
+.progression-option--active {
+  background: rgba(255, 107, 53, 0.12);
+  color: #ff6b35;
+}
+
+.progression-option:active {
+  background: rgba(255, 107, 53, 0.2);
+}
+
+/* Loop Changes セクション */
+.changes-section {
+  border-top: 1px solid #2c2c34;
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.changes-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-reset-changes {
+  padding: 2px 8px;
+  border: 1px solid #3a3a44;
+  border-radius: 6px;
+  background: none;
+  color: #55555f;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.1s ease, color 0.1s ease;
+}
+
+.btn-reset-changes:active {
+  border-color: #7b8fff;
+  color: #7b8fff;
+}
+
+/* コード進行（8マス: 4列 × 2行） */
+.chord-display {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.chord-chip-wrapper {
+  position: relative;
+  min-width: 0;
+}
+
+.chord-chip {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px 2px;
+  border-radius: 8px;
+  background: #1e1e26;
+  border: 1px solid #2c2c34;
+  font-size: clamp(0.52rem, 2vw, 0.7rem);
+  font-weight: 700;
+  color: #7a7a90;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.chord-chip:active {
+  transform: scale(0.93);
+}
+
+/* オーバーライドされた小節 */
+.chord-chip--overridden {
+  border-color: #7b8fff;
+  color: #a0a8ff;
+  background: rgba(123, 143, 255, 0.08);
+}
+
+/* 現在鳴っているコードをハイライト */
+.chord-chip--current {
+  background: rgba(255, 107, 53, 0.18);
+  border-color: #ff6b35;
+  color: #ff6b35;
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.22);
+}
+
+/* コードチップ 背景タップで閉じる透明レイヤー */
+.chord-chip-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* ----------------------------------------------------------------
+   デュアルホイールピッカー（Guitar 左 / Bass 右）
+   ---------------------------------------------------------------- */
+.chord-wheel {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 100;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a20;
+  border: 1px solid #3a3a44;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.75);
+}
+
+.chord-wheel--left  { left: 0; }
+.chord-wheel--right { right: 0; }
+
+/* Guitar / Bass ラベルヘッダー（スクロールしても常に表示） */
+.chord-wheel__header {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #2c2c34;
+  flex-shrink: 0;
+}
+
+.chord-wheel__col-label {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0 5px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #55555f;
+}
+
+/* ホイール本体（Guitar 列 + 縦線 + Bass 列） */
+.chord-wheel__body {
+  display: flex;
+  height: 132px; /* 3 × 44px */
+}
+
+.chord-wheel__divider-v {
+  width: 1px;
+  background: #2c2c34;
+  flex-shrink: 0;
+}
+
+.chord-wheel__col {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.chord-wheel__track {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.chord-wheel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.chord-wheel__pad {
+  height: 44px;
+}
+
+.chord-wheel__item {
+  height: 44px;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #30303a;
+  letter-spacing: 0.03em;
+}
+
+.chord-wheel__item--active {
+  color: #e4e4e8;
+  font-size: 1rem;
+}
+
+/* 中央の選択インジケータ */
+.chord-wheel__indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 44px;
+  transform: translateY(-50%);
+  border-top: 1px solid #3a3a44;
+  border-bottom: 1px solid #3a3a44;
+  background: rgba(255, 107, 53, 0.07);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 上下グラデーションフェード */
+.chord-wheel__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chord-wheel__fade--top {
+  top: 0;
+  background: linear-gradient(to bottom, #1a1a20 25%, transparent);
+}
+
+.chord-wheel__fade--bottom {
+  bottom: 0;
+  background: linear-gradient(to top, #1a1a20 25%, transparent);
+}
+
+/* ----------------------------------------------------------------
+   カウントイン表示
+   ---------------------------------------------------------------- */
+.count-in {
+  text-align: center;
+  margin-bottom: 12px;
+  animation: countPulse 0.12s ease-out;
+}
+
+.count-beat {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: #ff6b35;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(255, 107, 53, 0.5);
+}
+
+@keyframes countPulse {
+  from { transform: scale(1.5); opacity: 0.5; }
+  to   { transform: scale(1);   opacity: 1;   }
+}
+
+/* 小節番号インジケータ */
+.bar-indicator {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #44444c;
+  font-variant-numeric: tabular-nums;
+}
