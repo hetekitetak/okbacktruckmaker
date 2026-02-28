@@ -17,7 +17,7 @@
 |---|---------|--------|-----------|------|---------|
 | 1 | **画面スリープ防止（Wake Lock）** | 高 | ⏸️ 保留 | Wake Lock API は HTTPS 必須。LAN の HTTP 開発環境では `'wakeLock' in navigator` が false になり機能しない。iOS 26.3 / Safari で確認。 | クラウドサーバ（HTTPS）へのホスト後に再検証する。診断バッジ（「画面ロック防止: ON/OFF」）は本番前に削除すること。 |
 | 2 | **診断バッジの削除** | 中 | 🔴 未着手 | Wake Lock 調査のため UI に追加した診断バッジ（`wakelock-badge`）が残っている。 | Wake Lock が正常動作確認後、`App.tsx` のバッジ要素と `App.css` の `.wakelock-badge` スタイルを削除する。 |
-| 3 | **`@vitejs/plugin-basic-ssl` の整理** | 低 | 🔴 未着手 | HTTPS 検証のためインストールしたが現在 `vite.config.ts` では未使用。 | クラウド移行後に不要なら `npm uninstall` する。ローカル HTTPS 検証に使う場合は `vite.config.ts` に追記する。 |
+| 3 | **`@vitejs/plugin-basic-ssl` の整理** | 低 | 🟢 完了 | HTTPS 検証のためインストールしたが現在 `vite.config.ts` では未使用。 | `npm uninstall` 済み。`package.json` から削除完了。 |
 
 ---
 
