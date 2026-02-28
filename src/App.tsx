@@ -526,8 +526,6 @@ export default function App() {
     audioState, bpm, setBpm,
     humanize, toggleHumanize, enableAudio, play, stop,
     currentBar, currentStep, countBeat,
-    wakeLockActive,
-    wakeLockStatus,
     setGrooveSpec, setProgressionChords, setTrackMuted, setTrackPattern, setTrackVolume,
     setGtrBeatOverrides: setGtrBeatOverridesEngine,
     setGtrBeatActive: setGtrBeatActiveEngine,
@@ -704,10 +702,6 @@ export default function App() {
             </div>
 
 
-            {/* Wake Lock 状態（診断用） */}
-            <div className={`wakelock-badge ${wakeLockActive ? 'wakelock-badge--on' : 'wakelock-badge--off'}`}>
-              画面ロック防止: {wakeLockStatus}
-            </div>
 
             {/* BPM コントロール */}
             <div className="bpm-section">
